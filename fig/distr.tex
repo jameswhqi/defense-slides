@@ -1,0 +1,306 @@
+\environment fonts2
+\environment colors
+\environment lib2
+
+\setupMPpage[pagestate=start]
+
+\startluacode
+
+function MP.loadMatrix(var, file)
+  local fh = io.open(file, 'r')
+  local json = utilities.json
+  local mat = json.tolua(fh:read('a'))
+  fh:close()
+  mp.fprint('numeric %s[][], %sm, %sn, %smax, %smin;', var, var, var, var, var)
+  local max = -math.huge
+  local min = math.huge
+  for i, row in ipairs(mat) do
+    for j, x in ipairs(row) do
+      if x > max then
+        max = x
+      end
+      if x < min then
+        min = x
+      end
+      mp.fprint('%s[%d][%d] := %g;', var, i, j, x)
+    end
+  end
+  mp.fprint('%sm := %d;', var, #mat)
+  mp.fprint('%sn := %d;', var, #mat[1])
+  mp.fprint('%smax := %g;', var, max)
+  mp.fprint('%smin := %g;', var, min)
+end
+
+function MP.loadVector(var, file)
+  local fh = io.open(file, 'r')
+  local json = utilities.json
+  local vec = json.tolua(fh:read('a'))
+  fh:close()
+  mp.fprint('numeric %s[], %sn, %smax, %smin;', var, var, var, var)
+  local max = -math.huge
+  local min = math.huge
+  for i, x in ipairs(vec) do
+    if x > max then
+      max = x
+    end
+    if x < min then
+      min = x
+    end
+    mp.fprint('%s[%d] := %g;', var, i, x)
+  end
+  mp.fprint('%sn := %d;', var, #vec)
+  mp.fprint('%smax := %g;', var, max)
+  mp.fprint('%smin := %g;', var, min)
+end
+
+function MP.loadRange(var, file)
+  local fh = io.open(file, 'r')
+  local json = utilities.json
+  local mat = json.tolua(fh:read('a'))
+  fh:close()
+  mp.fprint('numeric %s[][], %sm, %sn;', var, var, var)
+  for i, row in ipairs(mat) do
+    for j, x in ipairs(row) do
+      mp.fprint('%s[%d][%d] := %g;', var, i, j, x)
+    end
+  end
+  mp.fprint('%sm := %d;', var, #mat)
+  mp.fprint('%sn := %d;', var, #mat[1])
+end
+
+\stopluacode
+
+\startMPinitializations
+
+color myreds[];
+readfile("myreds.tex");
+
+fontbase;
+
+% fixed parameters
+% slideWidth = 570, slideHeight = 380
+% canvasWidth := 80mm; % 90/140/190
+canvasHeight := 75mm;
+canvasMargin := 2mm;
+distrMax := .7;
+
+% dynamic parameters
+
+% global
+
+mkRect(canvas);
+(canvas.x, canvas.y) = origin;
+% canvas.w = canvasWidth;
+canvas.h = canvasHeight;
+
+% mkRect(matrix);
+% matrix.w = matrix.h;
+
+mkRect(distr);
+distr.w = distr.h * .7;
+% cy(distr) = cy(matrix);
+
+string agent[], tft;
+tft := "Tf\kern .15ex T";
+mkArray(agent, "AllD", "AllC", "HalfC", tft, "N"&tft, "G"&tft, "GN"&tft, "Bayes", "S"&tft);
+
+for i = 1 upto 9:
+  % def row = agentr.scantokens(sfx[i]) enddef;
+  % def col = agentc.scantokens(sfx[i]) enddef;
+  def dis = agentd.scantokens(sfx[i]) enddef;
+  % mkText(row, "\vphantom{fy}"&agent[i]);
+  % mkText(col, "\vphantom{fy}"&agent[i]);
+  mkText(dis, "\vphantom{fy}"&agent[i]);
+  % ee(row) = nw(matrix) - (1mm, (i - .5) * matrix.h / 9);
+  % ss(col) = nw(matrix) + ((i - .5) * matrix.w / 9, 1mm);
+  ee(dis) = nw(distr) - (1mm, (i - .5) * distr.h / 9);
+endfor
+
+% wx(agentd.ag) - ex(matrix) = 4mm;
+
+n := (distrMax + .0001) / .1;
+y := ny(distr) + 1mm;
+mkPath(axis, 1);
+axis.x1 = wx(distr);
+axis.x2 = ex(distr);
+axis.y1 = axis.y2 = y;
+axis.lw = .2mm;
+axis.lc = black;
+for i = 0 upto n:
+  def gtick = tick.scantokens(sfx[i+1]) enddef;
+  def gtlabl = tlabl.scantokens(sfx[i+1]) enddef;
+  x := wx(distr) + distr.w / n * i;
+  mkPath(gtick, 1);
+  gtick.x1 = gtick.x2 = x;
+  gtick.y1 = gtick.y2 - 1mm = y;
+  gtick.lw = .2mm;
+  gtick.lc = black;
+  if i mod 3 = 0:
+    mkText(gtlabl, MP.printf("@g", i * .1));
+    ss(gtlabl) = (x, y + 2mm);
+  fi
+endfor
+
+mkText(axislabl, "Proportion");
+cx(axislabl) = cx(distr);
+sy(axislabl) = ny(tlabl.aa) + 1mm;
+
+% fontlg;
+% mkText(figa, "\bf A");
+% mkText(figb, "\bf B");
+
+% ny(figa) = ny(figb) = ny(axislabl);
+% cx(figa) = wx(agentr.ag);
+% cx(figb) = wx(agentd.ag);
+
+barspace = distr.h / 9;
+lbarwidth = .2 barspace;
+abarwidth = .05 barspace;
+abardist = abarwidth;
+lrdist = 3 abarwidth + 4 abardist;
+rbarwidth = .2 barspace;
+barmargin = (barspace - lbarwidth - lrdist - rbarwidth) / 2;
+
+mkRect(legendls);
+mkRect(legendas);
+mkRect(legendrs);
+mkRect(legendrsb);
+mkText(legendlt, "\vphantom{ly}low-mutation limit ($u\to 0$)");
+mkText(legendat, "\vphantom{ly}agent-based simulation ($u=0.01$)");
+mkText(legendrt, "\vphantom{ly}hyperparameter perturbations");
+legendls.w = legendas.w = legendrs.w = legendrsb.w * 2 = distr.w / 6;
+legendls.h = lbarwidth;
+legendas.h = abarwidth;
+legendrs.h = rbarwidth;
+legendrsb.h = .3mm;
+wx(legendls) = wx(legendas) = wx(legendrs) = ex(distr) + 3mm;
+cx(legendrsb) = ex(legendrs);
+legendls.fc = gray13;
+legendas.fc = gray7;
+legendrs.fc = green15;
+legendrsb.fc = green10;
+cy(legendls) = cy(legendlt);
+cy(legendas) = cy(legendat);
+cy(legendrs) = cy(legendrsb) = cy(legendrt);
+wx(legendlt) = wx(legendat) = wx(legendrt) = ex(legendrsb) + 1mm;
+sy(legendlt) - ny(legendat) = sy(legendat) - ny(legendrt) = 2mm;
+ny(legendlt) = ny(distr);
+
+canvasMargin =
+wx(agentd.ag) - wx(canvas) =
+ex(canvas) - ex(legendat) =
+ny(canvas) - ny(axislabl) =
+sy(distr) - sy(canvas);
+
+
+% MP.loadMatrix("p", "data/payoff-matrix-"&ver&".json");
+
+% color lower, upper, col;
+% fontsm;
+
+% for i = 1 upto pn:
+%   for j = 1 upto pn:
+%     scale := (p[i][j] - pmin) / (pmax - pmin) * 255;
+%     lower := myreds[floor scale];
+%     upper := myreds[ceiling scale];
+%     col := (scale - floor scale)[lower, upper];
+%     filldraw unitsquare shifted (j - 1, pn - i) xyscaled (matrix.w / pn, matrix.h / pn) shifted sw(matrix) linewidth 0 withcolor col;
+%     draw textext(substring (1, 10) of MP.printf("@.3f", p[i][j])) scaled (7/12) shifted ((j - .5) * matrix.w / pn, (pn - i + .5) * matrix.h / pn) shifted sw(matrix) if scale < 255 * .5: withcolor white fi;
+%   endfor
+% endfor
+
+draw (nw(distr) -- sw(distr)) shifted (-.1mm, 0) linewidth .2mm;
+
+picture fig[];
+
+hideE(legendls, legendas, legendrs, legendrsb, legendlt, legendat, legendrt);
+
+fig1 := image(
+  render(0);
+);
+
+showE(legendls, legendlt);
+
+fig2 := image(
+  render(0);
+
+  MP.loadVector("l", "data/low-mutation-"&ver&"-all.json");
+
+  for i = 1 upto 9:
+    filldraw unitsquare xyscaled (l[i] / distrMax * distr.w, lbarwidth) shifted (nw(distr) + (0, -barspace * i + barmargin + rbarwidth + lrdist)) linewidth 0 withcolor gray13;
+  endfor
+);
+
+showE(legendas, legendat);
+
+fig3 := image(
+  render(0);
+
+  MP.loadVector("l", "data/low-mutation-"&ver&"-all.json");
+
+  for i = 1 upto 9:
+    filldraw unitsquare xyscaled (l[i] / distrMax * distr.w, lbarwidth) shifted (nw(distr) + (0, -barspace * i + barmargin + rbarwidth + lrdist)) linewidth 0 withcolor gray13;
+  endfor
+
+  MP.loadMatrix("a", "data/agent-based-"&ver&"-all.json");
+
+  for i = 1 upto am:
+    for j = 1 upto an:
+      filldraw unitsquare xyscaled (a[i][j] / distrMax * distr.w, abarwidth) shifted (nw(distr) + (0, -barspace * j + barmargin + rbarwidth + i * abardist + (i - 1) * abarwidth)) linewidth 0 withcolor gray7;
+    endfor
+  endfor
+);
+
+showE(legendrs, legendrsb, legendrt);
+
+fig4 := image(
+  render(0);
+
+  MP.loadVector("l", "data/low-mutation-"&ver&"-all.json");
+
+  for i = 1 upto 9:
+    filldraw unitsquare xyscaled (l[i] / distrMax * distr.w, lbarwidth) shifted (nw(distr) + (0, -barspace * i + barmargin + rbarwidth + lrdist)) linewidth 0 withcolor gray13;
+  endfor
+
+  MP.loadMatrix("a", "data/agent-based-"&ver&"-all.json");
+
+  for i = 1 upto am:
+    for j = 1 upto an:
+      filldraw unitsquare xyscaled (a[i][j] / distrMax * distr.w, abarwidth) shifted (nw(distr) + (0, -barspace * j + barmargin + rbarwidth + i * abardist + (i - 1) * abarwidth)) linewidth 0 withcolor gray7;
+    endfor
+  endfor
+
+  MP.loadRange("r", "data/hyper-range-"&ver&".json");
+
+  for i = 1 upto 9:
+    filldraw unitsquare xyscaled (r[2][i] / distrMax * distr.w, rbarwidth) shifted (nw(distr) + (0, -barspace * i + barmargin)) linewidth 0 withcolor green15;
+    draw ((r[1][i], 0)-- (r[3][i], 0)) scaled (1 / distrMax * distr.w) shifted (nw(distr) + (0, -barspace * i + barmargin + .5 rbarwidth)) linewidth .3mm withcolor green10;
+  endfor
+);
+
+\stopMPinitializations
+
+\starttext
+
+% \startMPpage
+% draw fig1;
+% \stopMPpage
+
+% \startMPpage
+% draw fig2;
+% \stopMPpage
+
+% \dorecurse{2}{
+%   \startMPpage
+%     draw fig\recurselevel;
+%   \stopMPpage
+% }
+
+\dorecurse{4}{
+  \defineMPinstance[foo\recurselevel][initializations=yes,extensions=yes,method=double]
+  \startMPpage[instance=foo\recurselevel]
+    draw fig\recurselevel;
+  \stopMPpage
+}
+
+\stoptext

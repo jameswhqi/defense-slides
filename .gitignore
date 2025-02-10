@@ -1,0 +1,11 @@
+node_modules/
+.dream2nix/
+.spago/
+output/
+style.css
+.psc-ide-port
+.tidyoperators
+defense.pdf
+/fig/**/*.pdf
+/fig/**/*.log
+/fig/**/*.tuc

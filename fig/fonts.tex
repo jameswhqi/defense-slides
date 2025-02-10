@@ -1,0 +1,54 @@
+\startenvironment fonts
+
+\definefontfeature[default][default][trep=yes]
+
+% \starttypescript[sfpro]
+%   \definefontsynonym[Sans]          [name:sfprotextregular]      [features=default]
+%   \definefontsynonym[SansItalic]    [name:sfprotextregularitalic]    [features=default]
+%   \definefontsynonym[SansBold]      [name:sfprotextbold]  [features=default]
+%   \definefontsynonym[SansBoldItalic][name:sfprotextbolditalic][features=default]
+%   \definefontsynonym[MathRoman][name:firamathregular][features=default]
+% \stoptypescript
+
+% \starttypescript[sfpro]
+%   \definetypeface[sfpro][ss][sans][heros][default]
+%   \definetypeface[sfpro][mm][math][sfpro][default]
+% \stoptypescript
+
+% \starttypescript[fira]
+%   \definefontsynonym[Sans]          [name:firasansregular]      [features=default]
+%   \definefontsynonym[SansItalic]    [name:firasansitalic]    [features=default]
+%   \definefontsynonym[SansBold]      [name:firasansbold]  [features=default]
+%   \definefontsynonym[SansBoldItalic][name:firasansbolditalic][features=default]
+%   \definefontsynonym[MathRoman][name:firamathregular][features=default]
+% \stoptypescript
+
+% \starttypescript[fira]
+%   \definetypeface[fira][ss][sans][fira][default]
+%   \definetypeface[fira][mm][math][fira][default]
+% \stoptypescript
+
+\starttypescript[myfont]
+  \definefontsynonym[Serif]          [name:xcharterroman]      [features=default]
+  \definefontsynonym[SerifItalic]    [name:xcharteritalic]    [features=default]
+  \definefontsynonym[SerifBold]      [name:xcharterbold]  [features=default]
+  \definefontsynonym[SerifBoldItalic][name:xcharterbolditalic][features=default]
+  \definefontsynonym[MathRoman][name:xchartermath][features=math\mathsizesuffix]
+  % \definefontsynonym[Sans]          [name:texgyreherosregular]      [features=default]
+  % \definefontsynonym[SansItalic]    [name:texgyreherositalic]    [features=default]
+  % \definefontsynonym[SansBold]      [name:texgyreherosbold]  [features=default]
+  % \definefontsynonym[SansBoldItalic][name:texgyreherosbolditalic][features=default]
+  % \definefontsynonym[MathRoman][name:stixtwomathregular][features=default]
+\stoptypescript
+
+\starttypescript[myfont]
+  \definetypeface[myfont][rm][serif][myfont][default]
+  % \definetypeface[myfont][ss][sans][myfont][default]
+  \definetypeface[myfont][mm][math][myfont][default]
+\stoptypescript
+
+\setupbodyfontenvironment[default][a=1.1]
+\setupbodyfontenvironment[8pt][x=7pt]
+\setupbodyfont[myfont,8pt]
+
+\stopenvironment

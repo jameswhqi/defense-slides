@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Test</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body class="bg-[#ddd]">
+  <script src="index.js"></script>
+  <script>
+    new EventSource('/esbuild').addEventListener('change', () => location.reload())
+  </script>
+</body>
+
+</html>

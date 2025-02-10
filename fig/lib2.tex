@@ -1,0 +1,387 @@
+\startenvironment lib2
+
+\startluacode
+
+function MP.printf(s, ...)
+  mp.quoted(s, ...)
+end
+
+function loadData(file)
+  local t = {}
+  local fh = io.open(file, 'r')
+  local content = string.fullstrip(fh:read('a'))
+  local lines = string.split(content, '\n\n')
+  for i, line in ipairs(lines) do
+    t[i] = {}
+    local lists = string.split(line, '\n')
+    for j, list in ipairs(lists) do
+      t[i][j] = {}
+      local xs = string.split(list, ' ')
+      for _, x in ipairs(xs) do
+        table.insert(t[i][j], tonumber(x))
+      end
+    end
+  end
+  fh:close()
+  return t
+end
+
+function MP.readPaths(file)
+  local data = loadData(file)
+  for i, line in ipairs(data) do
+    mp.fprint('p%d := ', i)
+    mp.path(line, '..', false)
+    mp.print(';')
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readStepPath(file)
+  local data = loadData(file)[1]
+  local line = {}
+  for i, point in ipairs(data) do
+    table.insert(line, point)
+    if i ~= #data then
+      table.insert(line, {data[i+1][1], point[2]})
+    end
+  end
+  mp.print('p := ')
+  mp.path(line, '--', false)
+  mp.print(';')
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readPairs(file)
+  local data = loadData(file)[1]
+  for i, point in ipairs(data) do
+    mp.fprint('p%d := ', i)
+    mp.pair(point)
+    mp.print(';')
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readLists(file)
+  local data = loadData(file)[1]
+  for i, list in ipairs(data) do
+    for j, x in ipairs(list) do
+      mp.fprint('l[%d][%d] := %g;', i, j, x)
+    end
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+\stopluacode
+
+\startMPextensions
+
+newinternal fontsize;
+def fontlg = fontsize := 8; enddef;
+def fontbase = fontsize := 7; enddef;
+def fontsm = fontsize := 6; enddef;
+% def fontxs = fontsize := 6; enddef;
+fontbase;
+
+newinternal debug;
+debug := 0;
+
+def linewidth = withpen pencircle scaled enddef;
+
+def mkArray(suffix a)(text t) = begingroup
+  save i; i := 1;
+  for u = t:
+    a[i] := u;
+    i := i + 1;
+  endfor
+endgroup enddef;
+
+vardef contains(suffix a)(expr x) =
+  boolean result;
+  result := false;
+  if known a.n:
+    for i = 1 upto a.n:
+      if a[i] = x:
+        result := true;
+      fi
+      exitif result;
+    endfor
+  fi
+  result
+enddef;
+
+string alphabet[], sfx[];
+mkArray(alphabet, "a", "b", "c", "d", "e", "f", "g", "h");
+for i = 1 upto 8:
+  for j = 1 upto 8:
+    sfx[(i-1)*8+j] := alphabet[i]&alphabet[j];
+  endfor
+endfor
+
+def mkElement(suffix n)(expr type_) =
+  elements[index] := str n;
+  index := index + 1;
+
+  string n.type;
+  n.type := type_;
+
+  boolean n.show_;
+  n.show_ := true;
+
+  numeric n.rot, n.layer;
+  n.rot := 0;
+  n.layer := 0;
+enddef;
+
+def mkPoint(suffix n) =
+  mkElement(n, "point");
+  numeric n.x, n.y, n.w, n.h;
+  n.w = 0;
+  n.h = 0;
+enddef;
+
+def mkRect(suffix n) =
+  mkElement(n, "rect");
+  numeric n.x, n.y, n.w, n.h, n.r, n.lw;
+  color n.lc, n.fc;
+enddef;
+
+def mkText(suffix n)(expr t) =
+  mkElement(n, "text");
+  numeric n.x, n.y, n.w, n.h;
+  picture n.pic;
+  color n.fc;
+  n.pic := textext.urt(t) scaled (fontsize/12);
+  n.w := bbwidth n.pic;
+  n.h := bbheight n.pic;
+enddef;
+
+def mkShape(suffix n)(expr p_, w_, h_) =
+  mkElement(n, "shape");
+  numeric n.x, n.y, n.w, n.h, n.scale, n.lw;
+  path n.p;
+  color n.lc, n.fc;
+  n.p := p_;
+  n.w = w_ * n.scale;
+  n.h = h_ * n.scale;
+enddef;
+
+def mkPath(suffix n)(expr nseg_) =
+  mkElement(n, "path");
+  n.nseg := nseg_;
+  boolean n.arrow;
+  n.arrow := false;
+  numeric n.x[], n.y[], n.scx[], n.scy[], n.tcx[], n.tcy[], n.lw, n.ahl, n.aha;
+  color n.lc;
+enddef;
+
+def mkGroup(suffix n)(text members_) =
+  string n.type, n.members[];
+  n.type := "group";
+  n.nmembers := 0;
+  forsuffixes m = members_:
+    n.nmembers := n.nmembers + 1;
+    n.members[n.nmembers] := str m;
+  endfor
+  numeric n.x, n.y, n.w, n.h, n.rot;
+  n.rot := 0;
+enddef;
+
+def hideE(text ns) =
+  forsuffixes n = ns:
+    if n.type = "group":
+      for i = 1 upto n.nmembers:
+        hideE(n.scantokens(n.members[i]));
+      endfor
+    else:
+      n.show_ := false;
+    fi
+  endfor
+enddef;
+
+def hideAll =
+  for i = 1 upto index - 1:
+    scantokens(elements[i]).show_ := false;
+  endfor
+enddef;
+
+def showE(text ns) =
+  forsuffixes n = ns:
+    if n.type = "group":
+      for i = 1 upto n.nmembers:
+        showE(n.scantokens(n.members[i]));
+      endfor
+    else:
+      n.show_ := true;
+    fi
+  endfor
+enddef;
+
+def enlarge(suffix a, b)(expr l) =
+  (b.x, b.y) = (a.x, a.y) - (l, l);
+  (b.w, b.h) = (a.w, a.h) + (2l, 2l);
+enddef;
+
+vardef sw(suffix n) =
+  (n.x, n.y)
+enddef;
+
+vardef se(suffix n) =
+  (n.x, n.y) + (n.w, 0) rotated n.rot
+enddef;
+
+vardef nw(suffix n) =
+  (n.x, n.y) + (0, n.h) rotated n.rot
+enddef;
+
+vardef ne(suffix n) =
+  (n.x, n.y) + (n.w, n.h) rotated n.rot
+enddef;
+
+vardef cc(suffix n) =
+  (n.x, n.y) + ((n.w, n.h) / 2) rotated n.rot
+enddef;
+
+vardef ss(suffix n) =
+  (n.x, n.y) + (n.w / 2, 0) rotated n.rot
+enddef;
+
+vardef nn(suffix n) =
+  (n.x, n.y) + (n.w / 2, n.h) rotated n.rot
+enddef;
+
+vardef ww(suffix n) =
+  (n.x, n.y) + (0, n.h / 2) rotated n.rot
+enddef;
+
+vardef ee(suffix n) =
+  (n.x, n.y) + (n.w, n.h / 2) rotated n.rot
+enddef;
+
+vardef cx(suffix n) =
+  xpart cc(n)
+enddef;
+
+vardef cy(suffix n) =
+  ypart cc(n)
+enddef;
+
+vardef ny(suffix n) =
+  ypart nn(n)
+enddef;
+
+vardef sy(suffix n) =
+  ypart ss(n)
+enddef;
+
+vardef wx(suffix n) =
+  xpart ww(n)
+enddef;
+
+vardef ex(suffix n) =
+  xpart ee(n)
+enddef;
+
+def box(suffix n) =
+  if n.type = "rect":
+    unitsquare xyscaled (n.w, n.h) shifted (n.x, n.y);
+  elseif n.type = "text":
+    unitsquare xyscaled (bbwidth n.pic, bbheight n.pic) shifted (n.x, n.y);
+  fi
+enddef;
+
+def render(expr layer_) =
+  for i = 1 upto index - 1:
+    if scantokens(elements[i]).layer = layer_:
+      renderElement(scantokens(elements[i]));
+    fi
+  endfor
+  setbounds currentpicture to box(canvas);
+enddef;
+
+def renderElement(suffix n) =
+  if debug > 0:
+    if n.type = "path":
+      draw textext(str n) scaled .3 shifted (.5[(n.x1, n.y1), (n.x[n.nseg+1], n.y[n.nseg+1])]);
+    else:
+      draw textext.llft(str n) scaled .3 shifted (n.x, n.y);
+    fi
+  fi
+  if n.show_:
+    if n.type = "rect":
+      path p;
+      if unknown n.r:
+        p := unitsquare xyscaled (n.w, n.h) rotated n.rot shifted (n.x, n.y);
+      else:
+        p := roundedsquare(n.w, n.h, n.r) rotated n.rot shifted (n.x, n.y);
+      fi
+      if known n.fc:
+        fill p withcolor n.fc;
+      fi
+      if known n.lw:
+        draw p withcolor n.lc linewidth n.lw;
+      fi
+    elseif n.type = "text":
+      draw n.pic rotated n.rot shifted (n.x, n.y) if known n.fc: withcolor n.fc fi;
+    elseif n.type = "shape":
+      path p;
+      p := n.p scaled n.scale shifted (n.x, n.y);
+      if known n.fc:
+        fill p withcolor n.fc;
+      fi
+      if known n.lw:
+        draw p withcolor n.lc linewidth n.lw;
+      fi
+    elseif n.type = "path":
+      if known n.lw:
+        begingroup
+          if known n.ahl:
+            interim ahlength := n.ahl;
+          fi
+          if known n.aha:
+            interim ahangle := n.aha;
+          fi
+          path p;
+          pair target;
+          p :=
+            for i = 1 upto n.nseg:
+              if unknown n.scx[i]:
+                (n.x[i], n.y[i]) --
+              else:
+                (n.x[i], n.y[i]) .. controls (n.scx[i], n.scy[i]) and (n.tcx[i], n.tcy[i]) ..
+              fi
+            endfor
+            if n.arrow:
+              if unknown n.scx[n.nseg]:
+                (n.x[n.nseg+1], n.y[n.nseg+1]) - unitvector ((n.x[n.nseg+1], n.y[n.nseg+1]) - (n.x[n.nseg], n.y[n.nseg])) * arrowTipLen(n.lw, ahangle)
+              else:
+                (n.x[n.nseg+1], n.y[n.nseg+1]) - unitvector ((n.x[n.nseg+1], n.y[n.nseg+1]) - (n.tcx[n.nseg], n.tcy[n.nseg])) * arrowTipLen(n.lw, ahangle)
+              fi
+            else:
+              (n.x[n.nseg+1], n.y[n.nseg+1])
+            fi;
+          % show(p);
+          if n.arrow: drawarrow else: draw fi p if known n.lc: withcolor n.lc fi linewidth n.lw;
+        endgroup
+      fi
+    fi
+  fi
+enddef;
+
+vardef arrowTipLen(expr lw, aha) =
+  lw / 2 / sind (aha / 2)
+enddef;
+
+\stopMPextensions
+
+\startMPinitializations
+
+linecap := butt;
+linejoin := mitered;
+ahvariant := 1;
+ahdimple := .2;
+ahlength := 2mm;
+
+string elements[];
+index := 1;
+
+\stopMPinitializations

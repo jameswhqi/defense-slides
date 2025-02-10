@@ -1,0 +1,78 @@
+\environment fonts
+\environment colors
+\environment lib
+
+\startMPdefinitions
+vardef getEllipse =
+  save n; n := 40;
+  for i = 0 upto n-1:
+    hide(
+      theta := i * 360 / n;
+      x_ := cosd theta * sqrt(1 + rho);
+      y_ := sind theta * sqrt(1 - rho);
+      x := mu1 + (x_ - y_) / sqrt 2 * sigma1;
+      y := mu2 + (x_ + y_) / sqrt 2 * sigma2;
+    )
+    ((x,y) transformed t)..
+  endfor cycle
+enddef;
+\stopMPdefinitions
+
+\startMPpage
+% drawGuides;
+
+height = 4cm;
+height = width * .85;
+
+string xLabel, yLabel;
+
+transform t;
+
+picture panel[];
+
+panel1 := image(
+  xmin := -2.9;
+  xmax := 2.9;
+  ymin := -.9;
+  ymax := 2.9;
+  xstep := 1;
+  ystep := 1;
+  xLabel := "$\lambda$";
+  yLabel := "Donation (\$)";
+  t := getT;
+
+  % save p; path p;
+  % MP.readStepPath("data/svo-lambda.txt");
+
+  % draw p transformed t lw .3mm withcolor green10;
+
+  mu1 := 0.3354;
+  mu2 := 1.1473;
+  rho := 0.4476;
+  sigma1 := 1.6039;
+  sigma2 := 1.3946;
+  draw getEllipse lw .2mm withcolor gray12;
+  sigma1 := sigma1 * 2;
+  sigma2 := sigma2 * 2;
+  draw getEllipse lw .15mm withcolor gray12;
+
+  save p; pair p[];
+  MP.readPairs("data/donate.txt");
+
+  for i = 1 upto n:
+    if isBoundaryXY(p[i], -2, 2, 0, 2):
+      fill fullcross(.2) rotated 45 scaled 1.4mm shifted (p[i] transformed t) withtransparency (1,.2);
+    else:
+      fill fullcircle scaled 1mm shifted (p[i] transformed t) withtransparency (1,.2);
+    fi
+  endfor
+
+  clip currentpicture to unitsquare xyscaled (width, height);
+
+  drawFrame(1, 1);
+
+  draw thetextext.ulft("$\rho=0.448$", (width,0) + (-3mm,3mm));
+);
+
+draw panel1;
+\stopMPpage

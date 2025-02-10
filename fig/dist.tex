@@ -1,0 +1,80 @@
+\environment fonts
+\environment colors
+\environment lib
+
+\startMPdefinitions
+def drawDist(expr name, jitterWidth, lb, ub) =
+  save l;
+  numeric l[][];
+  MP.readLists("data/dist-"&name&"-eff.txt");
+
+  fill (
+    for i = 1 upto n:
+      (l[i][1], l[i][3])--
+    endfor
+    for i = n downto 1:
+      (l[i][1], l[i][4])--
+    endfor
+    cycle
+  ) transformed t withcolor blue17;
+  draw (
+    for i = 1 upto n:
+      (l[i][1], l[i][2])
+      if i < n: -- fi
+    endfor
+  ) transformed t lw .3mm withcolor blue12;
+
+  save p, q;
+  pair p[], q;
+  MP.readPairs("data/dist-"&name&"-raw.txt");
+
+  for i = 1 upto n:
+    q := (p[i] + ((uniformdeviate(1) - .5) * jitterWidth, 0)) transformed t;
+    if isBoundaryY(p[i], lb, ub):
+      fill fullcross(.15) rotated 45 scaled (.7*1.4mm) shifted q withtransparency (1,.1);
+    else:
+      fill fullcircle scaled .7mm shifted q withtransparency (1,.1);
+    fi
+  endfor
+
+  save l;
+  numeric l[][];
+  MP.readLists("data/dist-"&name&"-se.txt");
+
+  for i = 1 upto n:
+    fill fullcircle scaled 1mm shifted ((l[i][1], l[i][2]) transformed t);
+    draw ((l[i][1], l[i][2]-l[i][3])--(l[i][1], l[i][2]+l[i][3])) transformed t lw .2mm;
+  endfor
+
+  drawFrame(1, 1);
+enddef;
+\stopMPdefinitions
+
+\startMPpage
+% drawGuides;
+
+height := 4cm;
+
+string xLabel, yLabel;
+
+transform t;
+
+picture panel[];
+
+panel1 := image(
+  xmin := .1;
+  xmax := 10.9;
+  ymin := -2.3;
+  ymax := 2.3;
+  xstep := 1;
+  ystep := 1;
+  width := height * 1.5;
+  xLabel := "Social distance ranking";
+  yLabel := "$\lambda$";
+  t := getT;
+
+  drawDist("lambda", .6, -2, 2);
+);
+
+draw panel1;
+\stopMPpage

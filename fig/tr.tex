@@ -1,0 +1,71 @@
+\environment fonts
+\environment colors
+\environment lib
+
+\startMPdefinitions
+vardef getEllipse =
+  save n; n := 40;
+  for i = 0 upto n-1:
+    hide(
+      theta := i * 360 / n;
+      x_ := cosd theta * sqrt(1 + rho);
+      y_ := sind theta * sqrt(1 - rho);
+      x := mu + (x_ - y_) / sqrt 2 * sigma;
+      y := mu + (x_ + y_) / sqrt 2 * sigma;
+    )
+    (x,y)..
+  endfor cycle
+enddef;
+\stopMPdefinitions
+
+\startMPpage
+% drawGuides;
+
+height = 4cm;
+height = width;
+
+string xLabel, yLabel;
+
+transform t;
+
+picture panel[];
+
+panel1 := image(
+  xmin := -2.3;
+  xmax := 2.3;
+  ymin := xmin;
+  ymax := xmax;
+  xstep := 2;
+  ystep := xstep;
+  xLabel := "$\lambda_1$";
+  yLabel := "$\lambda_2$";
+  t := getT;
+
+  mu := 0.1854;
+  rho := 0.8595;
+  sigma := 1.1086;
+  draw getEllipse transformed t lw .2mm withcolor gray12;
+  sigma := sigma * 2;
+  draw getEllipse transformed t lw .15mm withcolor gray12;
+
+  save p;
+  pair p[];
+  MP.readPairs("data/tr-lambda.txt");
+
+  for i = 1 upto n:
+    if isBoundary(p[i], -2, 2):
+      fill fullcross(.2) rotated 45 scaled 1.4mm shifted (p[i] transformed t) withtransparency (1,.2);
+    else:
+      fill fullcircle scaled 1mm shifted (p[i] transformed t) withtransparency (1,.2);
+    fi
+  endfor
+
+  clip currentpicture to unitsquare xyscaled (width, height);
+
+  drawFrame(1, 1);
+
+  draw thetextext.ulft("$\rho=0.859$", (width,0) + (-3mm,3mm));
+);
+
+draw panel1;
+\stopMPpage

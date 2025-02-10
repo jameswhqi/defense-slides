@@ -1,0 +1,242 @@
+\startenvironment lib
+
+\startluacode
+
+function loadData(file)
+  local t = {}
+  local fh = io.open(file, 'r')
+  local content = string.fullstrip(fh:read('a'))
+  local lines = string.split(content, '\n\n')
+  for i, line in ipairs(lines) do
+    t[i] = {}
+    local lists = string.split(line, '\n')
+    for j, list in ipairs(lists) do
+      t[i][j] = {}
+      local xs = string.split(list, ' ')
+      for _, x in ipairs(xs) do
+        table.insert(t[i][j], tonumber(x))
+      end
+    end
+  end
+  fh:close()
+  return t
+end
+
+function MP.readPaths(file)
+  local data = loadData(file)
+  for i, line in ipairs(data) do
+    mp.fprint('p%d := ', i)
+    mp.path(line, '..', false)
+    mp.print(';')
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readStepPath(file)
+  local data = loadData(file)[1]
+  local line = {}
+  for i, point in ipairs(data) do
+    table.insert(line, point)
+    if i ~= #data then
+      table.insert(line, {data[i+1][1], point[2]})
+    end
+  end
+  mp.print('p := ')
+  mp.path(line, '--', false)
+  mp.print(';')
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readPairs(file)
+  local data = loadData(file)[1]
+  for i, point in ipairs(data) do
+    mp.fprint('p%d := ', i)
+    mp.pair(point)
+    mp.print(';')
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+function MP.readLists(file)
+  local data = loadData(file)[1]
+  for i, list in ipairs(data) do
+    for j, x in ipairs(list) do
+      mp.fprint('l[%d][%d] := %g;', i, j, x)
+    end
+  end
+  mp.fprint('n := %d;', #data)
+end
+
+\stopluacode
+
+\startMPdefinitions
+
+def lw = withpen pencircle scaled enddef;
+
+vardef getAnchor(expr p, a) = llcorner p + (xpart a * bbwidth p, ypart a * bbheight p) enddef;
+
+def mkArray(suffix a)(text t) = begingroup
+  save i; i := 1;
+  for u = t:
+    a[i] := u;
+    i := i + 1;
+  endfor
+endgroup enddef;
+
+def drawGuides =
+  for x = 0, 9, 14, 19:
+    draw (x*cm,0) -- (x*cm,10cm) lw .2mm withcolor gray18;
+  endfor
+enddef;
+
+def finalBounds(expr w) = begingroup
+  save margin;
+  margin := (w - bbwidth currentpicture) / 2;
+  setbounds currentpicture to boundingbox currentpicture enlarged margin;
+endgroup enddef;
+
+vardef getT =
+  identity shifted (-xmin,-ymin) xyscaled (width/(xmax-xmin),height/(ymax-ymin))
+enddef;
+
+vardef arc(expr startAngle, endAngle) =
+  fullcircle scaled 2 cutbefore (origin -- (2,0) rotated startAngle) cutafter (origin -- (2,0) rotated endAngle)
+enddef;
+
+def west primary p =
+  .5[llcorner p, ulcorner p]
+enddef;
+
+def east primary p =
+  .5[lrcorner p, urcorner p]
+enddef;
+
+def south primary p =
+  .5[llcorner p, lrcorner p]
+enddef;
+
+def north primary p =
+  .5[ulcorner p, urcorner p]
+enddef;
+
+def drawXTick(expr x, fmt, labels) = begingroup
+  save tick, label;
+  pair tick[];
+  picture label;
+
+  tick1 := (x,ymin) transformed t;
+  tick2 := (x,ymax) transformed t;
+  tick3 := (x + xstep / 2, ymin) transformed t;
+  tick4 := (x + xstep / 2, ymax) transformed t;
+
+  if xTickType = 1:
+    draw tick1--tick1+(0,.7mm) lw .15mm withcolor gray10;
+    draw tick2--tick2-(0,.7mm) lw .15mm withcolor gray10;
+  elseif x < xtmax:
+    draw tick3--tick4 lw .15mm withcolor gray10;
+  fi
+
+  if labels = 1:
+    label := thefmttext.bot(fmt, x, tick1-(0,1mm));
+    draw label;
+    xLabelY := min(xLabelY, ypart llcorner label);
+  elseif labels = 2:
+    label := thefmttext.top(fmt, x, tick2+(0,1mm));
+    draw label;
+    xLabelY := max(xLabelY, ypart ulcorner label);
+  fi
+endgroup enddef;
+
+def drawYTick(expr y, fmt, labels) = begingroup
+  save tick, label;
+  pair tick[];
+  picture label;
+
+  tick1 := (xmin,y) transformed t;
+  draw tick1--tick1+(.7mm,0) lw .15mm withcolor gray10;
+  tick2 := (xmax,y) transformed t;
+  draw tick2--tick2-(.7mm,0) lw .15mm withcolor gray10;
+  if labels = 1:
+    label := thefmttext.lft(fmt, y, tick1-(1mm,0));
+    draw label;
+    yLabelX := min(yLabelX, xpart llcorner label);
+  elseif labels = 2:
+    label := thefmttext.rt(fmt, y, tick2+(1mm,0));
+    draw label;
+    yLabelX := max(yLabelX, xpart lrcorner label);
+  fi
+endgroup enddef;
+
+def drawFrame(expr xLabels, yLabels) = begingroup
+  save xtmin, xtmax, ytmin, ytmax, xLabelY, yLabelX;
+
+  xLabelY := ypart ((0,ymin) transformed t);
+
+  if xstep > 0:
+    xtmin := ceiling ((xmin - xTickAnchor) / xstep) * xstep + xTickAnchor;
+    xtmax := floor ((xmax - xTickAnchor) / xstep) * xstep + xTickAnchor;
+
+    for x = xtmin step xstep until xtmax:
+      drawXTick(x, if unknown xTickLabel[x]: "$@g$" else: xTickLabel[x] fi, xLabels);
+    endfor
+  fi
+
+  if xLabels = 1:
+    draw textext.bot(xLabel) shifted (width/2, xLabelY - 1mm);
+  elseif xLabels = 2:
+    draw textext.top(xLabel) shifted (width/2, xLabelY + 1mm);
+  fi
+
+  yLabelX := xpart ((xmin,0) transformed t);
+
+  if ystep > 0:
+    ytmin := ceiling ((ymin - yTickAnchor) / ystep) * ystep + yTickAnchor;
+    ytmax := floor ((ymax - yTickAnchor) / ystep) * ystep + yTickAnchor;
+
+    for y = ytmin step ystep until ytmax:
+      drawYTick(y, if unknown yTickLabel[y]: "$@g$" else: yTickLabel[y] fi, yLabels);
+    endfor
+  fi
+
+  if yLabels = 1:
+    draw textext.top(yLabel) rotated 90 shifted (yLabelX - 1mm, height/2);
+  elseif yLabels = 2:
+    draw textext.top(yLabel) rotated -90 shifted (yLabelX + 1mm, height/2);
+  fi
+
+  draw unitsquare xyscaled (width, height) lw .2mm;
+endgroup enddef;
+
+vardef isBoundary(expr p, lb, ub) =
+  (xpart p = lb) or (ypart p = lb) or (xpart p = ub) or (ypart p = ub)
+enddef;
+
+vardef isBoundaryY(expr p, lb, ub) =
+  (ypart p = lb) or (ypart p = ub)
+enddef;
+
+vardef isBoundaryXY(expr p, lbX, ubX, lbY, ubY) =
+  (xpart p = lbX) or (ypart p = lbY) or (xpart p = ubX) or (ypart p = ubY)
+enddef;
+
+vardef fullcross(expr w) =
+  (for r = 0 step 90 until 270:
+    ((1,w) rotated r)--((w,w) rotated r)--((w,1) rotated r)--
+  endfor cycle) scaled .5
+enddef;
+\stopMPdefinitions
+
+\startMPinitializations
+linecap := butt;
+linejoin := mitered;
+ahvariant := 1;
+ahdimple := .2;
+ahlength := 1mm;
+randomseed := 3509;
+xTickAnchor := 0;
+yTickAnchor := 0;
+xTickType := 1; % 1: tick, 2: region
+yTickType := 1;
+\stopMPinitializations
+
+\stopenvironment

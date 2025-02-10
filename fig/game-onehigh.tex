@@ -1,0 +1,182 @@
+\environment fonts2
+\environment colors
+\environment lib2
+
+% \setupMPpage[pagestate=start]
+
+\startMPinitializations
+
+debug := 0;
+fontbase;
+
+% fixed parameters
+% slideWidth = 570, slideHeight = 380
+% canvasWidth := 140mm; % 90/140/190
+% canvasHeight := canvasWidth;
+canvasMarginX := 1mm;
+canvasMarginY := 1mm;
+squareSize := .7cm;
+matLineWidth := .2mm;
+matNumMargin := .15;
+matVarMargin := .11;
+matLabelGap := .15;
+
+% dynamic parameters
+
+def mkNorm(suffix n)(expr a, b, c, d, e, f, g, h_) =
+  mkRect(n.bound);
+  n.bound.w = n.bound.h = squareSize * 2;
+
+  mkPath(n.horiz, 1);
+  (n.horiz.x1, n.horiz.y1) = ww(n.bound);
+  (n.horiz.x2, n.horiz.y2) = ee(n.bound);
+
+  mkPath(n.vert, 1);
+  (n.vert.x1, n.vert.y1) = nn(n.bound);
+  (n.vert.x2, n.vert.y2) = ss(n.bound);
+
+  mkPath(n.diag, 1);
+  (n.diag.x1, n.diag.y1) = nw(n.bound);
+  (n.diag.x2, n.diag.y2) = se(n.bound);
+
+  mkPath(n.diagll, 1);
+  (n.diagll.x1, n.diagll.y1) = ww(n.bound);
+  (n.diagll.x2, n.diagll.y2) = ss(n.bound);
+
+  mkPath(n.diagur, 1);
+  (n.diagur.x1, n.diagur.y1) = nn(n.bound);
+  (n.diagur.x2, n.diagur.y2) = ee(n.bound);
+
+  forsuffixes s = n.bound, n.horiz, n.vert, n.diag, n.diagll, n.diagur:
+    s.lw = matLineWidth;
+    s.lc = black;
+  endfor
+
+  mkText(n.ta, decimal a);
+  mkText(n.tb, decimal b);
+  mkText(n.tc, decimal c);
+  mkText(n.td, decimal d);
+  mkText(n.te, decimal e);
+  mkText(n.tf, decimal f);
+  mkText(n.tg, decimal g);
+  mkText(n.th, decimal h_);
+
+  pair offset;
+  offset = squareSize * matNumMargin * (1, 1);
+
+  sw(n.ta) = ww(n.bound) + offset;
+  ne(n.tb) = nn(n.bound) - offset;
+  sw(n.tc) = cc(n.bound) + offset;
+  ne(n.td) = ne(n.bound) - offset;
+  sw(n.te) = sw(n.bound) + offset;
+  ne(n.tf) = cc(n.bound) - offset;
+  sw(n.tg) = ss(n.bound) + offset;
+  ne(n.th) = ee(n.bound) - offset;
+
+  mkText(n.lra, "A");
+  mkText(n.lrb, "B");
+  mkText(n.lca, "A");
+  mkText(n.lcb, "B");
+  ee(n.lra) = .5[ww(n.bound), nw(n.bound)] - (squareSize * matLabelGap, 0);
+  ee(n.lrb) = .5[ww(n.bound), sw(n.bound)] - (squareSize * matLabelGap, 0);
+  ss(n.lca) = .5[nn(n.bound), nw(n.bound)] + (0, squareSize * matLabelGap);
+  ss(n.lcb) = .5[nn(n.bound), ne(n.bound)] + (0, squareSize * matLabelGap);
+
+  mkText(n.lr, "[X]");
+  mkText(n.lc, "[Y]");
+  ex(n.lr) = wx(n.lra) - squareSize * matLabelGap;
+  cy(n.lr) = cy(n.bound);
+  sy(n.lc) = ny(n.lca) + squareSize * matLabelGap;
+  cx(n.lc) = cx(n.bound);
+
+  mkPoint(n.matc);
+  cc(n.matc) = cc(n.bound);
+
+  mkGroup(n, bound, horiz, vert, diag, diagll, diagur, ta, tb, tc, td, te, tf, tg, th, lra, lrb, lca, lcb, lr, lc);
+  n.x = wx(n.lr);
+  n.y = sy(n.bound);
+  n.w = ex(n.bound) - wx(n.lr);
+  n.h = ny(n.lc) - sy(n.bound);
+enddef;
+
+def mkOne(suffix n)(expr a, b, c, d) =
+  mkRect(n.bound);
+  n.bound.w * 2 = n.bound.h = squareSize * 2;
+
+  mkPath(n.horiz, 1);
+  (n.horiz.x1, n.horiz.y1) = ww(n.bound);
+  (n.horiz.x2, n.horiz.y2) = ee(n.bound);
+
+  mkPath(n.diaga, 1);
+  (n.diaga.x1, n.diaga.y1) = nw(n.bound);
+  (n.diaga.x2, n.diaga.y2) = ee(n.bound);
+
+  mkPath(n.diagb, 1);
+  (n.diagb.x1, n.diagb.y1) = ww(n.bound);
+  (n.diagb.x2, n.diagb.y2) = se(n.bound);
+
+  forsuffixes s = n.bound, n.horiz, n.diaga, n.diagb:
+    s.lw = matLineWidth;
+    s.lc = black;
+  endfor
+
+  mkText(n.ta, a);
+  mkText(n.tb, b);
+  mkText(n.tc, c);
+  mkText(n.td, d);
+
+  pair offset;
+  offset = squareSize * matVarMargin * (1, 1);
+
+  sw(n.ta) = ww(n.bound) + offset;
+  ne(n.tb) = ne(n.bound) - offset;
+  sw(n.tc) = sw(n.bound) + offset;
+  ne(n.td) = ee(n.bound) - offset;
+
+  mkText(n.lra, "A");
+  mkText(n.lrb, "B");
+  ee(n.lra) = .5[ww(n.bound), nw(n.bound)] - (squareSize * matLabelGap, 0);
+  ee(n.lrb) = .5[ww(n.bound), sw(n.bound)] - (squareSize * matLabelGap, 0);
+
+  mkText(n.lr, "[Self]");
+  mkText(n.lc, "Opp");
+  ex(n.lr) = wx(n.lra) - squareSize * matLabelGap;
+  cy(n.lr) = cy(n.bound);
+  sy(n.lc) = ny(n.bound) + squareSize * matLabelGap;
+  cx(n.lc) = cx(n.bound);
+
+  mkPoint(n.matc);
+  cc(n.matc) = cc(n.bound);
+
+  mkGroup(n, bound, horiz, diaga, diagb);
+  n.x = wx(n.lr);
+  n.y = sy(n.bound);
+  n.w = ex(n.bound) - wx(n.lr);
+  n.h = ny(n.lc) - sy(n.bound);
+enddef;
+
+% global
+
+mkRect(canvas);
+(canvas.x, canvas.y) = origin;
+% canvas.w = canvasWidth;
+% canvas.h = canvasHeight;
+
+mkNorm(phanto, 0, 0, 0, 0, 0, 0, 0, 0);
+hideE(phanto);
+mkOne(game, "$w_1$", "$w_2$", "$w_3$", "$w_4$");
+cc(phanto.matc) = cc(game.matc);
+
+canvasMarginX =
+wx(game) - wx(canvas) =
+ex(canvas) - ex(game);
+
+canvasMarginY =
+ny(canvas) - ny(phanto) =
+sy(game) - sy(canvas);
+
+\stopMPinitializations
+
+\startMPpage
+  render(0);
+\stopMPpage

@@ -1,0 +1,13 @@
+{
+  "name": "defense",
+  "version": "0.0.1",
+  "dependencies": {
+    "tailwindcss":"*"
+  },
+  "scripts": {
+    "css": "tailwindcss -i css/input.css -o css/style.css --watch",
+    "serve": "esbuild --bundle entry.js --outfile=index.js --watch --servedir=.",
+    "ops": "spago sources | xargs purs-tidy generate-operators > .tidyoperators",
+    "build": "tailwindcss -i css/input.css -o css/style.css && spago build && esbuild --bundle entry.js --outfile=index.js"
+  }
+}

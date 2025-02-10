@@ -1,0 +1,79 @@
+package:
+  name: defense
+  dependencies:
+    - console
+    - effect
+    - prelude
+    - tuples
+    - foldable-traversable
+    - formatting
+    - specular
+    - web-html
+    - literals
+    - web-url
+    - parsing
+  # test:
+  #   main: Test.Main
+  #   dependencies: []
+workspace:
+  package_set:
+    registry: 60.7.0
+    # registry: 50.6.1
+  extra_packages:
+    specular:
+      git: https://github.com/restaumatic/purescript-specular.git
+      ref: 1c3028b38ae2c72f7b618e8767614676acc376f2
+      dependencies:
+        - aff
+        - arrays
+        - avar
+        - console
+        - datetime
+        - debug
+        - effect
+        - either
+        - foldable-traversable
+        - foreign
+        - foreign-object
+        - functions
+        # - integers
+        - invariant
+        - maybe
+        - newtype
+        - partial
+        - prelude
+        # - random
+        # - record
+        - refs
+        - safe-coerce
+        - spec
+        - spec-mocha
+        - strings
+        - transformers
+        - tuples
+        # - type-equality
+        - typelevel-prelude
+        - unsafe-coerce
+        - unsafe-reference
+    formatting:
+      git: https://github.com/krisajenkins/purescript-formatting.git
+      ref: 3884d9daefeed6695d99cd4fa87cda2eec17323b
+      dependencies:
+        - avar
+        - console
+        - effect
+        - psci-support
+        - test-unit
+    literals:
+      git: https://github.com/ilyakooo0/purescript-literals.git
+      ref: 6875fb28026595cfb780318305a77e79b098bb01
+      dependencies:
+        - assert
+        - effect
+        - integers
+        - maybe
+        - numbers
+        - partial
+        - prelude
+        - typelevel-prelude
+        - unsafe-coerce
